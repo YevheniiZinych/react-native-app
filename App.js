@@ -1,16 +1,18 @@
+import "react-native-gesture-handler";
+import * as Font from "expo-font";
 import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
+import AppLoading from "expo-app-loading";
+import { NavigationContainer } from "@react-navigation/native";
+
 import {
   StyleSheet,
   View,
-  ImageBackground,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import * as Font from "expo-font";
-import AppLoading from "expo-app-loading";
-import LoginScreen from "./Screens/LoginScreen";
-import RegistrationScreen from "./Screens/RegistrationScreen";
+
+import { useRoute } from "./router";
 
 const loadFonts = async () => {
   await Font.loadAsync({
@@ -20,6 +22,8 @@ const loadFonts = async () => {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
+
+  const routing = useRoute(true);
 
   if (!isLoading) {
     return (
@@ -33,14 +37,8 @@ export default function App() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <ImageBackground
-          style={styles.image}
-          source={require("./assets/BG-photo.png")}
-        >
-          {/* <LoginScreen /> */}
-          {/* <RegistrationScreen /> */}
-          <StatusBar style="auto" />
-        </ImageBackground>
+        <NavigationContainer>{routing}</NavigationContainer>
+        <StatusBar style="auto" />
       </View>
     </TouchableWithoutFeedback>
   );
@@ -50,10 +48,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-  },
-
-  image: {
-    flex: 1,
-    resizeMode: "cover",
   },
 });
