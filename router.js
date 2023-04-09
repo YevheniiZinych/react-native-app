@@ -10,7 +10,9 @@ import { StyleSheet, Platform, View } from "react-native";
 import LoginScreen from "./Screens/auth/LoginScreen";
 import RegistrationScreen from "./Screens/auth/RegistrationScreen";
 import CreateScreen from "./Screens/mainScreen/CreateScreen";
-import Home from "./Screens/mainScreen/Home";
+// import Home from "./Screens/mainScreen/Home";
+import PostsScreen from "./Screens/mainScreen/PostsScreen";
+import DefaultScreenPosts from "./Screens/nestedScreens/DefaultScreenPost";
 import ProfileScreen from "./Screens/mainScreen/ProfileScreen";
 
 const AuthStack = createNativeStackNavigator();
@@ -73,7 +75,7 @@ export const useRoute = (isAuth) => {
           ),
         }}
         name="Posts"
-        component={Home}
+        component={PostsScreen}
       />
       <MainTab.Screen
         options={{

@@ -1,5 +1,5 @@
-import PostsScreen from "./PostsScreen";
+// import PostsScreen from "./PostsScreen";
 
-export default function Home() {
-  return <PostsScreen />;
-}
+// export default function Home() {
+//   return <PostsScreen />;
+// }

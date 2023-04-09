@@ -1,49 +1,144 @@
+import * as Location from "expo-location";
 import { useState, useEffect } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import { Camera } from "expo-camera";
+
+const initialState = {
+  placeName: "",
+  location: "",
+  name: "",
+  photo: null,
+  comments: 0,
+  id: "",
+};
 
 export default function CreateScreen({ navigation }) {
   const [photoRef, setPhotoRef] = useState(null);
   const [prevPhoto, setPrevPhoto] = useState(null);
-  const [photo, setPhoto] = useState();
-  console.log(prevPhoto);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const [photoSend, setPhotoSend] = useState("");
+  const [state, setState] = useState(initialState);
+  const { location, name, photo, placeName } = state;
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Permission to access location was denied");
+        return;
+      }
+    })();
+  }, []);
+
+  const keyboardHide = () => {
+    setIsShowKeyboard(false);
+    Keyboard.dismiss();
+  };
 
   const takePhoto = async () => {
-    const photo = await photoRef.takePictureAsync();
-    const { uri } = photo;
-    setPrevPhoto(uri);
+    const postId = Date.now().toString();
+    try {
+      const photo = await photoRef.takePictureAsync();
+      setState((prevState) => ({
+        ...prevState,
+        photo,
+        id: postId,
+      }));
+      let location = await Location.getCurrentPositionAsync({});
+      setState((prevState) => ({
+        ...prevState,
+        location,
+      }));
+      // console.log("latitude", location.coords.latitude);
+      // console.log("longitude", location.coords.longitude);
+
+      const { uri } = photo;
+      setPrevPhoto(uri);
+    } catch (error) {
+      console.log(error.message);
+    }
   };
 
   useEffect(() => {
-    navigation.navigate("Posts", { photo });
-  }, [photo]);
+    navigation.navigate("DefaultScreen", { photoSend });
+  }, [photoSend]);
 
   const sendPhoto = () => {
-    setPhoto(prevPhoto);
+    setPhotoSend(prevPhoto);
+  };
+
+  const onCameraReady = () => {
+    setIsCameraReady(true);
+  };
+
+  const onFocus = () => {
+    setIsShowKeyboard(true);
   };
 
   return (
-    <View style={style.container}>
-      <Camera style={style.camera} ref={setPhotoRef}>
-        {prevPhoto && (
-          <View style={style.photoContainer}>
-            <Image
-              source={{ uri: prevPhoto }}
-              style={{
-                height: 250,
-                width: 250,
-              }}
-            />
-          </View>
+    <TouchableWithoutFeedback onPress={keyboardHide}>
+      <View style={style.container}>
+        <Camera style={style.camera} ref={setPhotoRef}>
+          {prevPhoto && (
+            <View style={style.photoContainer}>
+              <Image
+                source={{ uri: prevPhoto }}
+                style={{
+                  height: 150,
+                  width: 150,
+                }}
+              />
+            </View>
+          )}
+          <TouchableOpacity onPress={takePhoto} style={style.snapContainer}>
+            <Text style={style.snap}>SNAP</Text>
+          </TouchableOpacity>
+        </Camera>
+        {photo ? (
+          <Text style={style.textBottom}>Редактировать фото</Text>
+        ) : (
+          <Text style={style.textBottom}>Загрузите фото</Text>
         )}
-        <TouchableOpacity onPress={takePhoto} style={style.snapContainer}>
-          <Text style={style.snap}>SNAP</Text>
+        <View style={style.form}>
+          <TextInput
+            style={style.input}
+            onChangeText={(value) =>
+              setState((prevState) => ({ ...prevState, name: value }))
+            }
+            value={name}
+            placeholder="Название..."
+            placeholderColor="#BDBDBD"
+            onFocus={onFocus}
+          />
+
+          <TextInput
+            style={{ ...style.input, marginBottom: 32 }}
+            onChangeText={(value) =>
+              setState((prevState) => ({
+                ...prevState,
+                placeName: value,
+              }))
+            }
+            value={placeName}
+            placeholder="Местность..."
+            onFocus={onFocus}
+          />
+        </View>
+        <TouchableOpacity onPress={sendPhoto} style={style.sendBtn}>
+          <Text>SEND</Text>
         </TouchableOpacity>
-      </Camera>
-      <TouchableOpacity onPress={sendPhoto} style={style.sendBtn}>
-        <Text style={style}>SEND</Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -53,7 +148,7 @@ const style = StyleSheet.create({
   },
 
   camera: {
-    height: "80%",
+    height: "40%",
     marginTop: 50,
     alignItems: "center",
     justifyContent: "flex-end",
@@ -98,5 +193,26 @@ const style = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#0BD7F3",
     borderRadius: 50,
+  },
+
+  textBottom: {
+    fontSize: 16,
+    lineHeight: 19,
+    color: "#BDBDBD",
+    marginBottom: 48,
+  },
+
+  form: {
+    width: "100%",
+  },
+
+  input: {
+    borderBottomWidth: 1,
+    paddingBottom: 16,
+    borderBottomColor: "#E8E8E8",
+    backgroundColor: "#ffffff",
+    marginBottom: 47,
+    color: "#212121",
+    fontSize: 16,
   },
 });
