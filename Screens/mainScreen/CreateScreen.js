@@ -1,32 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Text, View, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Camera } from "expo-camera";
 
 export default function CreateScreen({ navigation }) {
   const [photoRef, setPhotoRef] = useState(null);
-  const [photo, setPhoto] = useState(null);
-  console.log(photo);
+  const [prevPhoto, setPrevPhoto] = useState(null);
+  const [photo, setPhoto] = useState();
+  console.log(prevPhoto);
 
   const takePhoto = async () => {
     const photo = await photoRef.takePictureAsync();
-
     const { uri } = photo;
-
-    setPhoto(uri);
+    setPrevPhoto(uri);
   };
 
-  const sendPhoto = () => {
-    // console.log(navigation);
+  useEffect(() => {
     navigation.navigate("Posts", { photo });
+  }, [photo]);
+
+  const sendPhoto = () => {
+    setPhoto(prevPhoto);
   };
 
   return (
     <View style={style.container}>
       <Camera style={style.camera} ref={setPhotoRef}>
-        {photo && (
+        {prevPhoto && (
           <View style={style.photoContainer}>
             <Image
-              source={{ uri: photo }}
+              source={{ uri: prevPhoto }}
               style={{
                 height: 250,
                 width: 250,

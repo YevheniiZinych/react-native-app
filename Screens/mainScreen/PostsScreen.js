@@ -2,6 +2,7 @@ import { Text, View, StyleSheet } from "react-native";
 
 export default function PostsScreen({ route }) {
   console.log(route);
+  // const { photo } = route.params;
   return (
     <View style={style.container}>
       <Text>PostsScreen</Text>
