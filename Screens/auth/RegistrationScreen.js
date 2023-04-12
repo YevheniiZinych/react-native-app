@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import {
   StyleSheet,
   View,
@@ -10,8 +11,9 @@ import {
   Keyboard,
   Dimensions,
   ImageBackground,
-  Button,
+  TouchableWithoutFeedback,
 } from "react-native";
+import { authSignUpUser } from "../../redux/auth/authOperations";
 
 const widthDimensions = Dimensions.get("window").width;
 
@@ -23,125 +25,151 @@ const initialState = {
 
 export default RegistrationScreen = ({ navigation }) => {
   const [loginState, setLoginState] = useState(initialState);
-  const [dimensions, setDimensions] = useState({
-    width: widthDimensions,
-  });
-  const [onFocus, setOnFocus] = useState(false);
+  const [dimensions, setDimensions] = useState(widthDimensions);
+  const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+
+  const dispatch = useDispatch();
+  // const [onFocus, setOnFocus] = useState(false);
 
   useEffect(() => {
-    const subscription = Dimensions.addEventListener(
-      "change",
-      ({ window, _ }) => {
-        setDimensions({ width: window.width });
-      }
-    );
-    return () => subscription?.remove();
+    const onChange = () => {
+      const width = Dimensions.get("window").width;
+      setDimensions(width);
+    };
+
+    const listener = Dimensions.addEventListener("change", onChange);
+    return () => {
+      listener.remove();
+    };
   }, []);
 
-  const keyboardHide = () => {
-    Keyboard.dismiss();
+  // useEffect(() => {
+  //   const subscription = Dimensions.addEventListener(
+  //     "change",
+  //     ({ window, screen }) => {
+  //       setDimensions({ width: window.width, screen });
+  //     }
+  //   );
+  //   return () => subscription?.remove();
+  // }, []);
 
+  const handleAuthSubmit = () => {
+    setIsShowKeyboard(false);
+    Keyboard.dismiss();
+    dispatch(authSignUpUser(loginState));
     setLoginState(initialState);
-    setOnFocus(false);
+    // setOnFocus(false);
+  };
+
+  const keyboardHide = () => {
+    setIsShowKeyboard(false);
+    Keyboard.dismiss();
   };
 
   return (
-    <ImageBackground
-      style={styles.image}
-      source={require("../../assets/BG-photo.png")}
-    >
-      <View style={styles.container}>
-        <Text style={styles.title}>REGISTRATION</Text>
-        <KeyboardAvoidingView
-          behavior={Platform.OS == "ios" ? "padding" : "height"}
+    <TouchableWithoutFeedback onPress={keyboardHide}>
+      <View style={{ ...styles.container, width: dimensions }}>
+        <ImageBackground
+          style={styles.image}
+          source={require("../../assets/BG-photo.png")}
         >
-          <View
-            style={{
-              ...styles.registerForm,
-              width: dimensions.width - 16 * 2,
-              marginBottom: onFocus ? 20 : 113,
-            }}
+          <Text style={styles.title}>REGISTRATION</Text>
+          <KeyboardAvoidingView
+            behavior={Platform.OS == "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={-290}
           >
             <View
               style={{
-                marginTop: 33,
+                ...styles.registerForm,
+                paddingBottom: isShowKeyboard ? 0 : 132,
               }}
             >
-              <TextInput
-                value={loginState.name}
-                onChangeText={(value) =>
-                  setLoginState((prevState) => ({ ...prevState, name: value }))
-                }
-                onFocus={() => setOnFocus(true)}
-                placeholder="Enter your name"
-                textAlign={"center"}
-                style={styles.input}
-              />
+              <View
+                style={{
+                  marginTop: 33,
+                }}
+              >
+                <TextInput
+                  value={loginState.name}
+                  onChangeText={(value) =>
+                    setLoginState((prevState) => ({
+                      ...prevState,
+                      name: value,
+                    }))
+                  }
+                  onFocus={() => setIsShowKeyboard(true)}
+                  placeholder="Enter your name"
+                  textAlign={"center"}
+                  style={styles.input}
+                />
+              </View>
+              <View
+                style={{
+                  marginTop: 16,
+                }}
+              >
+                <TextInput
+                  value={loginState.email}
+                  onChangeText={(value) =>
+                    setLoginState((prevState) => ({
+                      ...prevState,
+                      email: value,
+                    }))
+                  }
+                  onFocus={() => setIsShowKeyboard(true)}
+                  placeholder="Email address"
+                  textAlign={"center"}
+                  style={styles.input}
+                />
+              </View>
+              <View
+                style={{
+                  marginTop: 16,
+                }}
+              >
+                <TextInput
+                  value={loginState.password}
+                  onChangeText={(value) =>
+                    setLoginState((prevState) => ({
+                      ...prevState,
+                      password: value,
+                    }))
+                  }
+                  onFocus={() => setIsShowKeyboard(true)}
+                  placeholder="Password"
+                  secureTextEntry={true}
+                  style={styles.input}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.registrationBtn}
+                activeOpacity={0.8}
+                onPress={handleAuthSubmit}
+              >
+                <Text style={styles.btnText}>SIGN UP</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate("Login")}
+              >
+                <Text style={styles.text}>Are you have account? Enter</Text>
+              </TouchableOpacity>
             </View>
-            <View
-              style={{
-                marginTop: 16,
-              }}
-            >
-              <TextInput
-                value={loginState.email}
-                onChangeText={(value) =>
-                  setLoginState((prevState) => ({ ...prevState, email: value }))
-                }
-                onFocus={() => setOnFocus(true)}
-                placeholder="Email address"
-                textAlign={"center"}
-                style={styles.input}
-              />
-            </View>
-            <View
-              style={{
-                marginTop: 16,
-              }}
-            >
-              <TextInput
-                value={loginState.password}
-                onChangeText={(value) =>
-                  setLoginState((prevState) => ({
-                    ...prevState,
-                    password: value,
-                  }))
-                }
-                onFocus={() => setOnFocus(true)}
-                placeholder="Password"
-                secureTextEntry={true}
-                style={styles.input}
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.registrationBtn}
-              activeOpacity={0.8}
-              onPress={keyboardHide}
-            >
-              <Text style={styles.btnText}>SIGN UP</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate("Login")}
-            >
-              <Text style={styles.text}>Are you have account? Enter</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </ImageBackground>
       </View>
-    </ImageBackground>
+    </TouchableWithoutFeedback>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
   },
   image: {
     flex: 1,
     resizeMode: "cover",
+    justifyContent: "flex-end",
   },
   registerForm: {
     marginHorizontal: 16,

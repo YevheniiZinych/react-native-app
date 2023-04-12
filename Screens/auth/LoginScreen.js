@@ -10,11 +10,12 @@ import {
   Keyboard,
   Dimensions,
   ImageBackground,
-  Button,
+  TouchableWithoutFeedback,
 } from "react-native";
+import { useDispatch } from "react-redux";
+import { authSignInUser } from "../../redux/auth/authOperations";
 
 const widthDimensions = Dimensions.get("window").width;
-const screenDimensions = Dimensions.get("screen");
 
 const initialState = {
   email: "",
@@ -23,107 +24,123 @@ const initialState = {
 
 export default function LoginScreen({ navigation }) {
   const [loginState, setLoginState] = useState(initialState);
-  const [dimensions, setDimensions] = useState({
-    width: widthDimensions,
-    screen: screenDimensions,
-  });
+  const [dimensions, setDimensions] = useState(widthDimensions);
+  const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    const subscription = Dimensions.addEventListener(
-      "change",
-      ({ window, screen }) => {
-        setDimensions({ width: window.width, screen });
-      }
-    );
-    return () => subscription?.remove();
+    const onChange = () => {
+      const width = Dimensions.get("window").width;
+      setDimensions(width);
+    };
+
+    const listener = Dimensions.addEventListener("change", onChange);
+    return () => {
+      listener.remove();
+    };
   }, []);
 
   const keyboardHide = () => {
+    setIsShowKeyboard(false);
     Keyboard.dismiss();
+  };
 
+  const handleSubmitLogin = () => {
+    setIsShowKeyboard(false);
+    Keyboard.dismiss();
+    dispatch(authSignInUser(loginState));
     setLoginState(initialState);
   };
 
   return (
-    <ImageBackground
-      style={styles.image}
-      source={require("../../assets/BG-photo.png")}
-    >
-      <View style={styles.container}>
-        <Text style={styles.title}>SIGN IN</Text>
-        <KeyboardAvoidingView
-          behavior={Platform.OS == "ios" ? "padding" : "height"}
+    <TouchableWithoutFeedback onPress={keyboardHide}>
+      <View style={{ ...styles.container, width: dimensions }}>
+        <ImageBackground
+          style={styles.image}
+          source={require("../../assets/BG-photo.png")}
         >
-          <View
-            style={{
-              ...styles.formLogin,
-              width: dimensions.width - 16 * 2,
-            }}
+          <Text style={styles.title}>SIGN IN</Text>
+          <KeyboardAvoidingView
+            behavior={Platform.OS == "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={-150}
           >
             <View
               style={{
-                marginTop: 33,
+                ...styles.formLogin,
+                paddingBottom: isShowKeyboard ? 0 : 132,
               }}
             >
-              <TextInput
-                value={loginState.email}
-                onChangeText={(value) =>
-                  setLoginState((prevState) => ({ ...prevState, email: value }))
-                }
-                placeholder="Email address"
-                textAlign={"center"}
-                style={styles.input}
-              />
-            </View>
-            <View
-              style={{
-                marginTop: 16,
-              }}
-            >
-              <TextInput
-                value={loginState.password}
-                onChangeText={(value) =>
-                  setLoginState((prevState) => ({
-                    ...prevState,
-                    password: value,
-                  }))
-                }
-                placeholder="Password"
-                secureTextEntry={true}
-                style={styles.input}
-              />
-            </View>
+              <View
+                style={{
+                  marginTop: 33,
+                }}
+              >
+                <TextInput
+                  value={loginState.email}
+                  onChangeText={(value) =>
+                    setLoginState((prevState) => ({
+                      ...prevState,
+                      email: value,
+                    }))
+                  }
+                  placeholder="Email address"
+                  textAlign={"center"}
+                  style={styles.input}
+                />
+              </View>
+              <View
+                style={{
+                  marginTop: 16,
+                }}
+              >
+                <TextInput
+                  value={loginState.password}
+                  onChangeText={(value) =>
+                    setLoginState((prevState) => ({
+                      ...prevState,
+                      password: value,
+                    }))
+                  }
+                  placeholder="Password"
+                  secureTextEntry={true}
+                  style={styles.input}
+                />
+              </View>
 
-            <TouchableOpacity
-              style={styles.SignInBtn}
-              activeOpacity={0.8}
-              onPress={keyboardHide}
-            >
-              <Text style={styles.btnText}>SIGN IN</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate("Registration")}
-            >
-              <Text style={styles.text}>No account? Registration</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+              <TouchableOpacity
+                style={styles.SignInBtn}
+                activeOpacity={0.8}
+                onPress={handleSubmitLogin}
+              >
+                <Text style={styles.btnText}>SIGN IN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate("Registration")}
+              >
+                <Text style={styles.text}>No account? Registration</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </ImageBackground>
       </View>
-    </ImageBackground>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    marginBottom: 144,
+    backgroundColor: "#fff",
+    // alignItems: "center",
+    // justifyContent: "flex-end",
+    // marginBottom: 144,
   },
   image: {
     flex: 1,
     resizeMode: "cover",
+    justifyContent: "flex-end",
   },
   formLogin: {
     marginHorizontal: 16,

@@ -3,16 +3,11 @@ import * as Font from "expo-font";
 import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import AppLoading from "expo-app-loading";
-import { NavigationContainer } from "@react-navigation/native";
+import { StyleSheet, View } from "react-native";
+import { Provider } from "react-redux";
 
-import {
-  StyleSheet,
-  View,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
-
-import { useRoute } from "./router";
+import Main from "./Components/Main/Main";
+import { store } from "./redux/store";
 
 const loadFonts = async () => {
   await Font.loadAsync({
@@ -22,8 +17,6 @@ const loadFonts = async () => {
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
-
-  const routing = useRoute(true);
 
   if (!isLoading) {
     return (
@@ -35,12 +28,12 @@ export default function App() {
     );
   }
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <NavigationContainer>{routing}</NavigationContainer>
-        <StatusBar style="auto" />
-      </View>
-    </TouchableWithoutFeedback>
+    <View style={styles.container}>
+      <Provider store={store}>
+        <Main />
+      </Provider>
+      <StatusBar style="auto" />
+    </View>
   );
 }
 
