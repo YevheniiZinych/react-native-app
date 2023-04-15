@@ -2,25 +2,31 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import {
   StyleSheet,
-  View,
   Text,
+  View,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
   TouchableOpacity,
-  Keyboard,
   Dimensions,
   ImageBackground,
   TouchableWithoutFeedback,
+  Platform,
+  Keyboard,
+  KeyboardAvoidingView,
+  Image,
 } from "react-native";
+import { AntDesign } from "@expo/vector-icons";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import * as ImagePicker from "expo-image-picker";
+import { storage } from "../../firebase/config";
 import { authSignUpUser } from "../../redux/auth/authOperations";
 
 const widthDimensions = Dimensions.get("window").width;
 
 const initialState = {
-  name: "",
+  login: "",
   email: "",
   password: "",
+  avatar: "",
 };
 
 export default RegistrationScreen = ({ navigation }) => {
@@ -28,8 +34,33 @@ export default RegistrationScreen = ({ navigation }) => {
   const [dimensions, setDimensions] = useState(widthDimensions);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
 
+  const { avatar } = loginState;
+
+  console.log(avatar);
+
   const dispatch = useDispatch();
-  // const [onFocus, setOnFocus] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoad(true);
+      try {
+        if (Platform.OS !== "web") {
+          const { status } =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+          setHasPermission(status === "granted");
+          if (status !== "granted") {
+            console.log(
+              "Sorry, we need camera roll permissions to make this work!"
+            );
+          }
+          setLoad(false);
+        }
+      } catch (error) {
+        setLoad(false);
+        setError(error.message);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const onChange = () => {
@@ -43,22 +74,54 @@ export default RegistrationScreen = ({ navigation }) => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   const subscription = Dimensions.addEventListener(
-  //     "change",
-  //     ({ window, screen }) => {
-  //       setDimensions({ width: window.width, screen });
-  //     }
-  //   );
-  //   return () => subscription?.remove();
-  // }, []);
+  const uploadAvatarFromGallery = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-  const handleAuthSubmit = () => {
-    setIsShowKeyboard(false);
-    Keyboard.dismiss();
-    dispatch(authSignUpUser(loginState));
-    setLoginState(initialState);
-    // setOnFocus(false);
+      if (!result.canceled) {
+        setLoginState((prevState) => ({
+          ...prevState,
+          avatar: result.assets[0].uri,
+        }));
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  const uploadAvatarToServer = async () => {
+    try {
+      const response = await fetch(avatar);
+      const file = await response.blob();
+
+      const avatarId = Date.now().toString();
+
+      const storageRef = ref(storage, `avatars/${avatarId}`);
+      await uploadBytes(storageRef, file);
+
+      const avatarRef = await getDownloadURL(storageRef);
+
+      return avatarRef;
+    } catch (error) {
+      console.log("Upload avatar to server error", error.message);
+    }
+  };
+
+  const handleAuthSubmit = async () => {
+    try {
+      const avatarRef = await uploadAvatarToServer();
+      setIsShowKeyboard(false);
+      Keyboard.dismiss();
+      dispatch(authSignUpUser({ ...loginState, avatar: avatarRef }));
+      setLoginState(initialState);
+    } catch (error) {
+      console.log("Upload avatar to server error", error.message);
+    }
   };
 
   const keyboardHide = () => {
@@ -73,7 +136,6 @@ export default RegistrationScreen = ({ navigation }) => {
           style={styles.image}
           source={require("../../assets/BG-photo.png")}
         >
-          <Text style={styles.title}>REGISTRATION</Text>
           <KeyboardAvoidingView
             behavior={Platform.OS == "ios" ? "padding" : "height"}
             keyboardVerticalOffset={-290}
@@ -84,6 +146,26 @@ export default RegistrationScreen = ({ navigation }) => {
                 paddingBottom: isShowKeyboard ? 0 : 132,
               }}
             >
+              <View style={styles.userImage}>
+                {avatar && (
+                  <Image
+                    src={avatar}
+                    alt="Your avatar"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: 16,
+                    }}
+                  />
+                )}
+                <TouchableOpacity
+                  style={styles.btnAdd}
+                  onPress={uploadAvatarFromGallery}
+                >
+                  <AntDesign name="pluscircleo" size={24} color={"#FF6C00"} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.title}>REGISTRATION</Text>
               <View
                 style={{
                   marginTop: 33,
@@ -94,7 +176,7 @@ export default RegistrationScreen = ({ navigation }) => {
                   onChangeText={(value) =>
                     setLoginState((prevState) => ({
                       ...prevState,
-                      name: value,
+                      login: value,
                     }))
                   }
                   onFocus={() => setIsShowKeyboard(true)}
@@ -220,5 +302,22 @@ const styles = StyleSheet.create({
     marginTop: 16,
 
     color: "#FF6C00",
+  },
+
+  userImage: {
+    position: "absolute",
+    top: -120,
+    right: Dimensions.get("window").width / 2 - 60,
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+  },
+
+  btnAdd: {
+    position: "absolute",
+    bottom: 14,
+    right: -12.5,
+    maxWidth: 25,
   },
 });

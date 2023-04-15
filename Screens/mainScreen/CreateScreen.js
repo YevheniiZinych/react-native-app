@@ -1,5 +1,6 @@
-import * as Location from "expo-location";
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import * as Location from "expo-location";
 import {
   Text,
   View,
@@ -11,6 +12,17 @@ import {
   Keyboard,
 } from "react-native";
 import { Camera } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  addDoc,
+  collection,
+  doc,
+  serverTimestamp,
+  setDoc,
+} from "@firebase/firestore";
+import { selectAuth } from "../../redux/auth/authSelectors";
+import { db, storage } from "../../firebase/config";
 
 const initialState = {
   placeName: "",
@@ -23,12 +35,13 @@ const initialState = {
 
 export default function CreateScreen({ navigation }) {
   const [photoRef, setPhotoRef] = useState(null);
-  const [prevPhoto, setPrevPhoto] = useState(null);
-  const [isCameraReady, setIsCameraReady] = useState(false);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
-  const [photoSend, setPhotoSend] = useState("");
   const [state, setState] = useState(initialState);
+  const { userId, userName } = useSelector(selectAuth);
   const { location, name, photo, placeName } = state;
+
+  // console.log(photo);
+  // console.log(location);
 
   useEffect(() => {
     (async () => {
@@ -40,6 +53,19 @@ export default function CreateScreen({ navigation }) {
     })();
   }, []);
 
+  const requestPermissions = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      console.log("status lib", status);
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
+  useEffect(() => {
+    requestPermissions();
+  }, []);
+
   const keyboardHide = () => {
     setIsShowKeyboard(false);
     Keyboard.dismiss();
@@ -48,10 +74,10 @@ export default function CreateScreen({ navigation }) {
   const takePhoto = async () => {
     const postId = Date.now().toString();
     try {
-      const photo = await photoRef.takePictureAsync();
+      const { uri } = await photoRef.takePictureAsync();
       setState((prevState) => ({
         ...prevState,
-        photo,
+        photo: uri,
         id: postId,
       }));
       let location = await Location.getCurrentPositionAsync({});
@@ -59,26 +85,55 @@ export default function CreateScreen({ navigation }) {
         ...prevState,
         location,
       }));
-      // console.log("latitude", location.coords.latitude);
-      // console.log("longitude", location.coords.longitude);
-
-      const { uri } = photo;
-      setPrevPhoto(uri);
     } catch (error) {
       console.log(error.message);
     }
   };
 
-  useEffect(() => {
-    navigation.navigate("DefaultScreen", { photoSend });
-  }, [photoSend]);
+  const uploadPhotoToServer = async () => {
+    try {
+      const response = await fetch(photo);
 
-  const sendPhoto = () => {
-    setPhotoSend(prevPhoto);
+      const file = await response.blob();
+      const id = Date.now().toString();
+
+      const pathReference = ref(storage, `images/${id}`);
+
+      await uploadBytes(pathReference, file);
+
+      const urlRef = await getDownloadURL(pathReference);
+
+      return urlRef;
+    } catch (error) {
+      console.error(error.message);
+    }
   };
 
-  const onCameraReady = () => {
-    setIsCameraReady(true);
+  const uploadPostToServer = async () => {
+    try {
+      const uploadPhoto = await uploadPhotoToServer();
+
+      const collectionRef = doc(collection(db, "posts"));
+
+      await setDoc(collectionRef, {
+        photo: uploadPhoto,
+        location,
+        placeName: placeName,
+        comments: 0,
+        userId,
+        userName,
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.log("upload post", error);
+    }
+  };
+
+  const sendPhoto = () => {
+    uploadPostToServer();
+
+    navigation.navigate("DefaultScreen");
+    setState(initialState);
   };
 
   const onFocus = () => {
@@ -89,10 +144,10 @@ export default function CreateScreen({ navigation }) {
     <TouchableWithoutFeedback onPress={keyboardHide}>
       <View style={style.container}>
         <Camera style={style.camera} ref={setPhotoRef}>
-          {prevPhoto && (
+          {photo && (
             <View style={style.photoContainer}>
               <Image
-                source={{ uri: prevPhoto }}
+                source={{ uri: photo }}
                 style={{
                   height: 150,
                   width: 150,
@@ -105,9 +160,9 @@ export default function CreateScreen({ navigation }) {
           </TouchableOpacity>
         </Camera>
         {photo ? (
-          <Text style={style.textBottom}>Редактировать фото</Text>
+          <Text style={style.textBottom}>Edit photo</Text>
         ) : (
-          <Text style={style.textBottom}>Загрузите фото</Text>
+          <Text style={style.textBottom}>Download photo</Text>
         )}
         <View style={style.form}>
           <TextInput
@@ -116,7 +171,7 @@ export default function CreateScreen({ navigation }) {
               setState((prevState) => ({ ...prevState, name: value }))
             }
             value={name}
-            placeholder="Название..."
+            placeholder="Sign your photo"
             placeholderColor="#BDBDBD"
             onFocus={onFocus}
           />
@@ -130,7 +185,7 @@ export default function CreateScreen({ navigation }) {
               }))
             }
             value={placeName}
-            placeholder="Местность..."
+            placeholder="Name your location"
             onFocus={onFocus}
           />
         </View>
@@ -145,6 +200,7 @@ export default function CreateScreen({ navigation }) {
 const style = StyleSheet.create({
   container: {
     flex: 1,
+    marginHorizontal: 16,
   },
 
   camera: {
@@ -180,9 +236,7 @@ const style = StyleSheet.create({
   },
 
   sendBtn: {
-    marginLeft: 145,
     marginTop: 10,
-    width: 110,
     height: 50,
 
     backgroundColor: "#0BD7F3",
@@ -207,10 +261,9 @@ const style = StyleSheet.create({
   },
 
   input: {
-    borderBottomWidth: 1,
-    paddingBottom: 16,
+    borderBottomWidth: 2,
+    paddingBottom: 10,
     borderBottomColor: "#E8E8E8",
-    backgroundColor: "#ffffff",
     marginBottom: 47,
     color: "#212121",
     fontSize: 16,

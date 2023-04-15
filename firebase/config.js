@@ -3,9 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAwXhGYFSGWiewnuC939c1ReSDvUnjpYJs",
   authDomain: "social-photo-app-79e3e.firebaseapp.com",
+  databaseURL:
+    "https://social-photo-app-79e3e-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "social-photo-app-79e3e",
   storageBucket: "social-photo-app-79e3e.appspot.com",
   messagingSenderId: "151812935321",
@@ -14,6 +18,7 @@ const firebaseConfig = {
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Authentication and get a reference to the service
 export const authFirebase = getAuth(app);

@@ -10,27 +10,29 @@ import {
 const { authSignOut, updateUserProfile, authStateChange } = authSlice.actions;
 
 export const authSignUpUser =
-  ({ email, password, login }) =>
-  async (dispatch, getSatte) => {
+  ({ email, password, login, avatar }) =>
+  async (dispatch, getState) => {
     try {
-      console.log(email);
       const response = await createUserWithEmailAndPassword(
         authFirebase,
         email,
         password
       );
-
+      console.log(avatar);
       const user = response.user;
+
       await updateProfile(authFirebase.currentUser, {
         displayName: login,
         userId: user.uid,
+        photoURL: avatar,
       });
 
-      const { displayName, uid } = await authFirebase.currentUser;
-
+      const { displayName, uid, photoURL } = authFirebase.currentUser;
+      console.log(photoURL);
       const userUpdateProfile = {
         userName: displayName,
         userId: uid,
+        userAvatar: photoURL,
       };
 
       dispatch(updateUserProfile(userUpdateProfile));
@@ -73,7 +75,8 @@ export const authSignOutUser = () => async (dispatch, getSatte) => {
 };
 
 export const authStateChangeUser = () => async (dispatch, getState) => {
-  await onAuthStateChanged(authFirebase, (user) => {
+  onAuthStateChanged(authFirebase, (user) => {
+    console.log(user);
     if (user) {
       const userUpdateProfile = {
         userName: user.displayName,
