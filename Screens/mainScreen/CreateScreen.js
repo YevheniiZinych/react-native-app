@@ -14,13 +14,7 @@ import {
 import { Camera } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import {
-  addDoc,
-  collection,
-  doc,
-  serverTimestamp,
-  setDoc,
-} from "@firebase/firestore";
+import { collection, doc, serverTimestamp, setDoc } from "@firebase/firestore";
 import { selectAuth } from "../../redux/auth/authSelectors";
 import { db, storage } from "../../firebase/config";
 
@@ -28,20 +22,17 @@ const initialState = {
   placeName: "",
   location: "",
   name: "",
-  photo: null,
+  photo: "",
   comments: 0,
   id: "",
 };
 
 export default function CreateScreen({ navigation }) {
-  const [photoRef, setPhotoRef] = useState(null);
+  const [photoRef, setPhotoRef] = useState("");
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
   const [state, setState] = useState(initialState);
   const { userId, userName } = useSelector(selectAuth);
   const { location, name, photo, placeName } = state;
-
-  // console.log(photo);
-  // console.log(location);
 
   useEffect(() => {
     (async () => {
@@ -64,7 +55,7 @@ export default function CreateScreen({ navigation }) {
 
   useEffect(() => {
     requestPermissions();
-  }, []);
+  });
 
   const keyboardHide = () => {
     setIsShowKeyboard(false);

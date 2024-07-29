@@ -33,10 +33,10 @@ export default RegistrationScreen = ({ navigation }) => {
   const [loginState, setLoginState] = useState(initialState);
   const [dimensions, setDimensions] = useState(widthDimensions);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const [load, setLoad] = useState(false);
+  const [error, setError] = useState();
 
   const { avatar } = loginState;
-
-  console.log(avatar);
 
   const dispatch = useDispatch();
 
